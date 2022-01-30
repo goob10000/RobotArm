@@ -14,13 +14,17 @@ type Model = {  Todos: Todo list
                 AngleUpperOutput: double
                 AngleLowerOutput: double
                 Message: string
-                XPos: double
-                YPos: double
                 Length: double
                 CenterX: double
                 CenterY: double
-                OldX: double
-                OldY: double
+                XPos1: double
+                YPos1: double
+                OldX1: double
+                OldY1: double
+                XPos2: double
+                YPos2: double
+                OldX2: double
+                OldY2: double
                 }
 
 type Msg =
@@ -42,8 +46,8 @@ let todosApi =
     |> Remoting.buildProxy<ITodosApi>
 
 let init () : Model * Cmd<Msg> =
-    let centerX = 250.0
-    let centerY = 250.0
+    let centerX = 150.0
+    let centerY = 150.0
     let model = {   Todos = []
                     Input = ""
                     AngleUpperInput = ""
@@ -52,13 +56,17 @@ let init () : Model * Cmd<Msg> =
                     AngleUpperOutput = 0.0
                     Message = "Welcome"
                     AngleUpperOutputTest = ""
+                    Length = 100.0
                     CenterX = centerX
                     CenterY = centerY
-                    XPos = centerX + 100.0
-                    YPos = centerY
-                    Length = 100.0
-                    OldX = centerX + 100.0
-                    OldY = centerY
+                    XPos1 = centerX + 100.0
+                    YPos1 = centerY
+                    OldX1 = centerX + 100.0
+                    OldY1 = centerY
+                    XPos2 = centerX + 200.0
+                    YPos2 = centerY
+                    OldX2 = centerX + 200.0
+                    OldY2 = centerY
                     }
 
     let cmd =
@@ -85,16 +93,20 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
             { model with AngleLowerOutput = Math.PI*v/180.0; Message = ""}, Cmd.ofMsg CalcMovement
         | false, _ ->
             { model with Message = "Lower Angle Not a Number"}, Cmd.none
-    | MoveRobot -> { model with Message = $"Moved to %.1f{model.XPos},%.1f{model.YPos}"; OldX = model.XPos; OldY = model.YPos }, Cmd.none
+    | MoveRobot -> { model with Message = $"Moved to %.1f{model.XPos1},%.1f{model.YPos1} and %.1f{model.XPos2},%.1f{model.YPos2}"; OldX1 = model.XPos1; OldY1 = model.YPos1; OldX2 = model.XPos2; OldY2 = model.YPos2}, Cmd.none
     | CalcMovement ->
-        let xPos = (cos(model.AngleUpperOutput) * model.Length)+model.CenterX
-        let yPos = (sin(model.AngleUpperOutput) * model.Length * -1.0)+model.CenterY
+        let XPos1 = (cos(model.AngleUpperOutput) * model.Length) + model.CenterX
+        let YPos1 = (sin(model.AngleUpperOutput) * model.Length * -1.0) + model.CenterY
+        let XPos2 = (cos(model.AngleUpperOutput + model.AngleLowerOutput) * model.Length) + XPos1
+        let YPos2 = (sin(model.AngleUpperOutput + model.AngleLowerOutput) * model.Length * -1.0) + YPos1
         System.Console.WriteLine $"UpperOut -> {model.AngleUpperOutput}"
         System.Console.WriteLine $"Model Length -> {model.Length}"
         System.Console.WriteLine $"LowerOut -> {model.AngleLowerOutput}"
-        System.Console.WriteLine $"XPos -> %.1f{xPos}"
-        System.Console.WriteLine $"YPos -> %.1f{yPos}"
-        { model with XPos = xPos; YPos = yPos; Message = $"Move to %.1f{model.XPos},%.1f{model.YPos}"}, Cmd.none
+        System.Console.WriteLine $"XPos1 -> %.1f{XPos1}"
+        System.Console.WriteLine $"YPos1 -> %.1f{YPos1}"
+        System.Console.WriteLine $"XPos2 -> %.1f{XPos2}"
+        System.Console.WriteLine $"YPos2 -> %.1f{YPos2}"
+        { model with XPos1 = XPos1; YPos1 = YPos1; XPos2 = XPos2; YPos2 = YPos2; Message = $"Move to %.1f{model.XPos1},%.1f{model.YPos1} and %.1f{model.XPos2},%.1f{model.YPos2}"}, Cmd.none
     | AddTodo ->
         let todo = Todo.create model.Input
 
@@ -140,7 +152,7 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
                                                                                 Fulma.Modifier.BackgroundColor Fulma.Color.IsGreyLighter
                                                                                 Fulma.Modifier.TextColor Fulma.Color.IsLink
                                                                                 Fulma.Modifier.TextWeight Fulma.TextWeight.Bold ] ]
-                    [ Bulma.label model.Message; Bulma.label $"Upper Angle = {model.AngleUpperOutput}"; Bulma.label $"Lower Angle = {model.AngleLowerOutput}"; Bulma.label $"XPos = %.1f{model.XPos}"; Bulma.label $"YPos = %.1f{model.YPos}"]
+                    [ Bulma.label model.Message; Bulma.label $"Upper Angle = {model.AngleUpperOutput}"; Bulma.label $"Lower Angle = {model.AngleLowerOutput}"; Bulma.label $"XPos1 = %.1f{model.XPos1}"; Bulma.label $"YPos1 = %.1f{model.YPos1}"; Bulma.label $"XPos2 = %.1f{model.XPos2}"; Bulma.label $"YPos2 = %.1f{model.YPos2}"]
             ]
         ]
         Bulma.field.div [
@@ -226,8 +238,16 @@ let drawingArea (model: Model) (dispatch: Msg -> unit) =
         Bulma.field.div [
             field.isGrouped
             prop.children [
-                svg [SVGAttr.Width 1000.0
-                     SVGAttr.Height 1000.0] [
+                svg [SVGAttr.Width 1500.0
+                     SVGAttr.Height 750.0] [
+                    rect [
+                    X 0
+                    Y 0
+                    SVGAttr.Width "100%"
+                    SVGAttr.Height "100%"
+                    SVGAttr.StrokeWidth 1
+                    SVGAttr.Fill "purple"
+                    ] []
                     circle [
                         Cx 10
                         Cy 100
@@ -238,18 +258,34 @@ let drawingArea (model: Model) (dispatch: Msg -> unit) =
                     line [
                         X1 model.CenterY
                         Y1 model.CenterX
-                        X2 model.XPos
-                        Y2 model.YPos
+                        X2 model.XPos1
+                        Y2 model.YPos1
                         SVGAttr.StrokeWidth 4
                         SVGAttr.Stroke "lime"
                     ] []
                     line [
                         X1 model.CenterY
                         Y1 model.CenterX
-                        X2 model.OldX
-                        Y2 model.OldY
+                        X2 model.OldX1
+                        Y2 model.OldY1
                         SVGAttr.StrokeWidth 4
                         SVGAttr.Stroke "blue"
+                    ] []
+                    line [
+                        X1 model.XPos1
+                        Y1 model.YPos1
+                        X2 model.XPos2
+                        Y2 model.YPos2
+                        SVGAttr.StrokeWidth 4
+                        SVGAttr.Stroke "lime"
+                    ] []
+                    line [
+                        X1 model.OldX1
+                        Y1 model.OldY1
+                        X2 model.OldX2
+                        Y2 model.OldY2
+                        SVGAttr.StrokeWidth 4
+                        SVGAttr.Stroke "red"
                     ] []
                 ]
                 Fable.React.Standard.svg []
