@@ -6,14 +6,15 @@ open Shared
 open Fulma
 open System
 
-type Model = {  Todos: Todo list
+type Model = {  Message: string
+                Todos: Todo list
                 Input: string
                 AngleUpperInput: string
-                AngleUpperOutputTest: string
                 AngleLowerInput: string
+                AngleUpperOutputF: double
+                AngleLowerOutputF: double
                 AngleUpperOutput: double
                 AngleLowerOutput: double
-                Message: string
                 Length: double
                 CenterX: double
                 CenterY: double
@@ -25,6 +26,7 @@ type Model = {  Todos: Todo list
                 YPos2: double
                 OldX2: double
                 OldY2: double
+                AngleChange: double
                 }
 
 type Msg =
@@ -39,6 +41,8 @@ type Msg =
     | SetAngleLower
     | MoveRobot
     | CalcMovement
+    | Tick
+
 
 let todosApi =
     Remoting.createApi ()
@@ -52,10 +56,11 @@ let init () : Model * Cmd<Msg> =
                     Input = ""
                     AngleUpperInput = ""
                     AngleLowerInput = ""
+                    AngleLowerOutputF = 0.0
+                    AngleUpperOutputF = 0.0
                     AngleLowerOutput = 0.0
                     AngleUpperOutput = 0.0
                     Message = "Welcome"
-                    AngleUpperOutputTest = ""
                     Length = 100.0
                     CenterX = centerX
                     CenterY = centerY
@@ -67,6 +72,7 @@ let init () : Model * Cmd<Msg> =
                     YPos2 = centerY
                     OldX2 = centerX + 200.0
                     OldY2 = centerY
+                    AngleChange = 5.0 * 2.0 * Math.PI / 360.0
                     }
 
     let cmd =
@@ -84,24 +90,41 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
     | SetAngleUpper ->
         match System.Double.TryParse model.AngleUpperInput with
         | true, v ->
-            { model with AngleUpperOutput = Math.PI*v/180.0; Message = ""}, Cmd.ofMsg CalcMovement
+            { model with AngleUpperOutputF = Math.PI*v/180.0; Message = ""}, Cmd.ofMsg CalcMovement
         | false, _ ->
             { model with Message = "Upper Angle Not a Number"}, Cmd.none
     | SetAngleLower ->
         match System.Double.TryParse model.AngleLowerInput with
         | true, v ->
-            { model with AngleLowerOutput = Math.PI*v/180.0; Message = ""}, Cmd.ofMsg CalcMovement
+            { model with AngleLowerOutputF = Math.PI*v/180.0; Message = ""}, Cmd.ofMsg CalcMovement
         | false, _ ->
             { model with Message = "Lower Angle Not a Number"}, Cmd.none
-    | MoveRobot -> { model with Message = $"Moved to %.1f{model.XPos1},%.1f{model.YPos1} and %.1f{model.XPos2},%.1f{model.YPos2}"; OldX1 = model.XPos1; OldY1 = model.YPos1; OldX2 = model.XPos2; OldY2 = model.YPos2}, Cmd.none
+    | MoveRobot -> //{ model with Message = $"Moved to %.1f{model.XPos1},%.1f{model.YPos1} and %.1f{model.XPos2},%.1f{model.YPos2}"; OldX1 = model.XPos1; OldY1 = model.YPos1; OldX2 = model.XPos2; OldY2 = model.YPos2}, Cmd.none
+        model, Cmd.ofMsg Tick
+    | Tick ->
+        if abs (model.AngleUpperOutputF - model.AngleUpperOutput) > 0.0 then
+            let xUpperAngleDif = min model.AngleChange (model.AngleUpperOutputF - model.OldX1)
+            let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+            if abs xUpperAngleDif < 0.01 && abs yUpperAngleDif < 0.01 then
+                model,Cmd.none
+            else
+                let tick =
+                    async {
+                        do! Async.Sleep 50
+                        return Tick
+                    }
+                {model with AngleUpperOutput = model.AngleUpperOutput + xUpperAngleDif}, Cmd.OfAsync.result tick
+        else
+            model,Cmd.none
+
     | CalcMovement ->
-        let XPos1 = (cos(model.AngleUpperOutput) * model.Length) + model.CenterX
-        let YPos1 = (sin(model.AngleUpperOutput) * model.Length * -1.0) + model.CenterY
-        let XPos2 = (cos(model.AngleUpperOutput + model.AngleLowerOutput) * model.Length) + XPos1
-        let YPos2 = (sin(model.AngleUpperOutput + model.AngleLowerOutput) * model.Length * -1.0) + YPos1
-        System.Console.WriteLine $"UpperOut -> {model.AngleUpperOutput}"
+        let XPos1 = (cos(model.AngleUpperOutputF) * model.Length) + model.CenterX
+        let YPos1 = (sin(model.AngleUpperOutputF) * model.Length * -1.0) + model.CenterY
+        let XPos2 = (cos(model.AngleUpperOutputF + model.AngleLowerOutputF) * model.Length) + XPos1
+        let YPos2 = (sin(model.AngleUpperOutputF + model.AngleLowerOutputF) * model.Length * -1.0) + YPos1
+        System.Console.WriteLine $"UpperOut -> {model.AngleUpperOutputF}"
         System.Console.WriteLine $"Model Length -> {model.Length}"
-        System.Console.WriteLine $"LowerOut -> {model.AngleLowerOutput}"
+        System.Console.WriteLine $"LowerOut -> {model.AngleLowerOutputF}"
         System.Console.WriteLine $"XPos1 -> %.1f{XPos1}"
         System.Console.WriteLine $"YPos1 -> %.1f{YPos1}"
         System.Console.WriteLine $"XPos2 -> %.1f{XPos2}"
@@ -152,7 +175,7 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
                                                                                 Fulma.Modifier.BackgroundColor Fulma.Color.IsGreyLighter
                                                                                 Fulma.Modifier.TextColor Fulma.Color.IsLink
                                                                                 Fulma.Modifier.TextWeight Fulma.TextWeight.Bold ] ]
-                    [ Bulma.label model.Message; Bulma.label $"Upper Angle = {model.AngleUpperOutput}"; Bulma.label $"Lower Angle = {model.AngleLowerOutput}"; Bulma.label $"XPos1 = %.1f{model.XPos1}"; Bulma.label $"YPos1 = %.1f{model.YPos1}"; Bulma.label $"XPos2 = %.1f{model.XPos2}"; Bulma.label $"YPos2 = %.1f{model.YPos2}"]
+                    [ Bulma.label model.Message; Bulma.label $"Upper Angle = {model.AngleUpperOutputF}"; Bulma.label $"Lower Angle = {model.AngleLowerOutputF}"; Bulma.label $"XPos1 = %.1f{model.XPos1}"; Bulma.label $"YPos1 = %.1f{model.YPos1}"; Bulma.label $"XPos2 = %.1f{model.XPos2}"; Bulma.label $"YPos2 = %.1f{model.YPos2}"]
             ]
         ]
         Bulma.field.div [
