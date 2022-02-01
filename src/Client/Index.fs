@@ -18,12 +18,16 @@ type Model = {  Message: string
                 Length: double
                 CenterX: double
                 CenterY: double
-                XPos1: double
-                YPos1: double
+                XPosF1: double
+                YPosF1: double
+                XPosI1: double
+                YPosI1: double
                 OldX1: double
                 OldY1: double
-                XPos2: double
-                YPos2: double
+                XPosF2: double
+                YPosF2: double
+                XPosI2: double
+                YPosI2: double
                 OldX2: double
                 OldY2: double
                 AngleChange: double
@@ -64,15 +68,19 @@ let init () : Model * Cmd<Msg> =
                     Length = 100.0
                     CenterX = centerX
                     CenterY = centerY
-                    XPos1 = centerX + 100.0
-                    YPos1 = centerY
+                    XPosF1 = centerX + 100.0
+                    YPosF1 = centerY
+                    XPosI1 = centerX + 100.0
+                    YPosI1 = centerY
                     OldX1 = centerX + 100.0
                     OldY1 = centerY
-                    XPos2 = centerX + 200.0
-                    YPos2 = centerY
+                    XPosF2 = centerX + 200.0
+                    YPosF2 = centerY
+                    XPosI2 = centerX + 200.0
+                    YPosI2 = centerY
                     OldX2 = centerX + 200.0
                     OldY2 = centerY
-                    AngleChange = 5.0 * 2.0 * Math.PI / 360.0
+                    AngleChange = 10.0 * 2.0 * Math.PI / 360.0
                     }
 
     let cmd =
@@ -99,32 +107,38 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
             { model with AngleLowerOutputF = Math.PI*v/180.0; Message = ""}, Cmd.ofMsg CalcMovement
         | false, _ ->
             { model with Message = "Lower Angle Not a Number"}, Cmd.none
-    | MoveRobot -> //{ model with Message = $"Moved to %.1f{model.XPos1},%.1f{model.YPos1} and %.1f{model.XPos2},%.1f{model.YPos2}"; OldX1 = model.XPos1; OldY1 = model.YPos1; OldX2 = model.XPos2; OldY2 = model.YPos2}, Cmd.none
-        model, Cmd.ofMsg Tick
+    | MoveRobot ->
+        let sXPosI1 = (cos(model.AngleUpperOutput) * model.Length) + model.CenterX
+        let sYPosI1 = (sin(model.AngleUpperOutput) * model.Length * -1.0) + model.CenterY
+        let sXPosI2 = (cos(model.AngleUpperOutput + model.AngleLowerOutput) * model.Length) + sXPosI1
+        let sYPosI2 = (sin(model.AngleUpperOutput + model.AngleLowerOutput) * model.Length * -1.0) + sYPosI1
+
+        { model with Message = $"Moved to %.1f{sXPosI1},%.1f{sYPosI1} and %.1f{sXPosI2},%.1f{sYPosI2}"; OldX1 = sXPosI1; OldY1 = sYPosI1; OldX2 = sXPosI2; OldY2 = sYPosI2}, Cmd.ofMsg Tick
+        //model, Cmd.ofMsg Tick
     | Tick ->
         if  abs (model.AngleLowerOutputF - model.AngleLowerOutput) < 0.01 && abs (model.AngleUpperOutputF - model.AngleUpperOutput) > 0.01 then
             if (model.AngleUpperOutputF - model.AngleUpperOutput) > 0.0 then
                 let UpperAngleDif = min model.AngleChange (model.AngleUpperOutputF - model.AngleUpperOutput)
-                //let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+                //let yUpperAngleDif = min model.AngleChange (model.YPosF1 - model.OldY1)
                 if abs UpperAngleDif < 0.01 then
                     model,Cmd.none
                 else
                     let tick =
                         async {
                             do! Async.Sleep 50
-                            return Tick
+                            return MoveRobot
                         }
                     {model with AngleUpperOutput = model.AngleUpperOutput + UpperAngleDif}, Cmd.OfAsync.result tick
             else if (model.AngleUpperOutputF - model.AngleUpperOutput) < 0.0 then
                 let UpperAngleDif = min model.AngleChange ((model.AngleUpperOutputF - model.AngleUpperOutput) * -1.0)
-                //let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+                //let yUpperAngleDif = min model.AngleChange (model.YPosF1 - model.OldY1)
                 if abs UpperAngleDif < 0.01 then
                     model,Cmd.none
                 else
                     let tick =
                         async {
                             do! Async.Sleep 50
-                            return Tick
+                            return MoveRobot
                         }
                     {model with AngleUpperOutput = model.AngleUpperOutput - UpperAngleDif}, Cmd.OfAsync.result tick
             else
@@ -132,26 +146,26 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
         else if  abs (model.AngleUpperOutputF - model.AngleUpperOutput) < 0.01 && abs (model.AngleLowerOutputF - model.AngleLowerOutput) > 0.01 then
             if (model.AngleLowerOutputF - model.AngleLowerOutput) > 0.0 then
                 let LowerAngleDif = min model.AngleChange (model.AngleLowerOutputF - model.AngleLowerOutput)
-                //let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+                //let yUpperAngleDif = min model.AngleChange (model.YPosF1 - model.OldY1)
                 if abs LowerAngleDif < 0.01 then
                     model,Cmd.none
                 else
                     let tick =
                         async {
                             do! Async.Sleep 50
-                            return Tick
+                            return MoveRobot
                         }
                     {model with AngleLowerOutput = model.AngleLowerOutput + LowerAngleDif}, Cmd.OfAsync.result tick
             else if (model.AngleLowerOutputF - model.AngleLowerOutput) < 0.0 then
                 let LowerAngleDif = min model.AngleChange ((model.AngleLowerOutputF - model.AngleLowerOutput) * -1.0)
-                //let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+                //let yUpperAngleDif = min model.AngleChange (model.YPosF1 - model.OldY1)
                 if abs LowerAngleDif < 0.01 then
                     model,Cmd.none
                 else
                     let tick =
                         async {
                             do! Async.Sleep 50
-                            return Tick
+                            return MoveRobot
                         }
                     {model with AngleLowerOutput = model.AngleLowerOutput - LowerAngleDif}, Cmd.OfAsync.result tick
             else
@@ -160,53 +174,53 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
             if (model.AngleLowerOutputF - model.AngleLowerOutput) > 0.0 && (model.AngleUpperOutputF - model.AngleUpperOutput) > 0.0 then
                 let LowerAngleDif = min model.AngleChange (model.AngleLowerOutputF - model.AngleLowerOutput)
                 let UpperAngleDif = min model.AngleChange (model.AngleUpperOutputF - model.AngleUpperOutput)
-                //let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+                //let yUpperAngleDif = min model.AngleChange (model.YPosF1 - model.OldY1)
                 if abs (LowerAngleDif) < 0.01 && abs (UpperAngleDif) < 0.01 then
                     model,Cmd.none
                 else
                     let tick =
                         async {
                             do! Async.Sleep 50
-                            return Tick
+                            return MoveRobot
                         }
                     {model with AngleLowerOutput = model.AngleLowerOutput + LowerAngleDif; AngleUpperOutput = model.AngleUpperOutput + UpperAngleDif}, Cmd.OfAsync.result tick
             else if (model.AngleLowerOutputF - model.AngleLowerOutput) < 0.0 && (model.AngleUpperOutputF - model.AngleUpperOutput) > 0.0 then
                 let LowerAngleDif = min model.AngleChange ((model.AngleLowerOutputF - model.AngleLowerOutput) * -1.0)
                 let UpperAngleDif = min model.AngleChange (model.AngleUpperOutputF - model.AngleUpperOutput)
-                //let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+                //let yUpperAngleDif = min model.AngleChange (model.YPosF1 - model.OldY1)
                 if abs (LowerAngleDif) < 0.01 && abs (UpperAngleDif) < 0.01 then
                     model,Cmd.none
                 else
                     let tick =
                         async {
                             do! Async.Sleep 50
-                            return Tick
+                            return MoveRobot
                         }
                     {model with AngleLowerOutput = model.AngleLowerOutput - LowerAngleDif; AngleUpperOutput = model.AngleUpperOutput + UpperAngleDif}, Cmd.OfAsync.result tick
             else if (model.AngleLowerOutputF - model.AngleLowerOutput) > 0.0 && (model.AngleUpperOutputF - model.AngleUpperOutput) < 0.0 then
                 let LowerAngleDif = min model.AngleChange (model.AngleLowerOutputF - model.AngleLowerOutput)
                 let UpperAngleDif = min model.AngleChange ((model.AngleUpperOutputF - model.AngleUpperOutput) * -1.0)
-                //let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+                //let yUpperAngleDif = min model.AngleChange (model.YPosF1 - model.OldY1)
                 if abs (LowerAngleDif) < 0.01 && abs (UpperAngleDif) < 0.01 then
                     model,Cmd.none
                 else
                     let tick =
                         async {
                             do! Async.Sleep 50
-                            return Tick
+                            return MoveRobot
                         }
                     {model with AngleLowerOutput = model.AngleLowerOutput + LowerAngleDif; AngleUpperOutput = model.AngleUpperOutput - UpperAngleDif}, Cmd.OfAsync.result tick
             else if (model.AngleLowerOutputF - model.AngleLowerOutput) < 0.0 && (model.AngleUpperOutputF - model.AngleUpperOutput) < 0.0 then
                 let LowerAngleDif = min model.AngleChange ((model.AngleLowerOutputF - model.AngleLowerOutput) * -1.0)
                 let UpperAngleDif = min model.AngleChange ((model.AngleUpperOutputF - model.AngleUpperOutput) * -1.0)
-                //let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+                //let yUpperAngleDif = min model.AngleChange (model.YPosF1 - model.OldY1)
                 if abs (LowerAngleDif) < 0.01 && abs (UpperAngleDif) < 0.01 then
                     model,Cmd.none
                 else
                     let tick =
                         async {
                             do! Async.Sleep 50
-                            return Tick
+                            return MoveRobot
                         }
                     {model with AngleLowerOutput = model.AngleLowerOutput - LowerAngleDif; AngleUpperOutput = model.AngleUpperOutput - UpperAngleDif}, Cmd.OfAsync.result tick
             else
@@ -215,18 +229,18 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
             model,Cmd.none
 
     | CalcMovement ->
-        let XPos1 = (cos(model.AngleUpperOutputF) * model.Length) + model.CenterX
-        let YPos1 = (sin(model.AngleUpperOutputF) * model.Length * -1.0) + model.CenterY
-        let XPos2 = (cos(model.AngleUpperOutputF + model.AngleLowerOutputF) * model.Length) + XPos1
-        let YPos2 = (sin(model.AngleUpperOutputF + model.AngleLowerOutputF) * model.Length * -1.0) + YPos1
+        let XPosF1 = (cos(model.AngleUpperOutputF) * model.Length) + model.CenterX
+        let YPosF1 = (sin(model.AngleUpperOutputF) * model.Length * -1.0) + model.CenterY
+        let XPosF2 = (cos(model.AngleUpperOutputF + model.AngleLowerOutputF) * model.Length) + XPosF1
+        let YPosF2 = (sin(model.AngleUpperOutputF + model.AngleLowerOutputF) * model.Length * -1.0) + YPosF1
         System.Console.WriteLine $"UpperOut -> {model.AngleUpperOutputF}"
         System.Console.WriteLine $"Model Length -> {model.Length}"
         System.Console.WriteLine $"LowerOut -> {model.AngleLowerOutputF}"
-        System.Console.WriteLine $"XPos1 -> %.1f{XPos1}"
-        System.Console.WriteLine $"YPos1 -> %.1f{YPos1}"
-        System.Console.WriteLine $"XPos2 -> %.1f{XPos2}"
-        System.Console.WriteLine $"YPos2 -> %.1f{YPos2}"
-        { model with XPos1 = XPos1; YPos1 = YPos1; XPos2 = XPos2; YPos2 = YPos2; Message = $"Move to %.1f{model.XPos1},%.1f{model.YPos1} and %.1f{model.XPos2},%.1f{model.YPos2}"}, Cmd.none
+        System.Console.WriteLine $"XPosF1 -> %.1f{XPosF1}"
+        System.Console.WriteLine $"YPosF1 -> %.1f{YPosF1}"
+        System.Console.WriteLine $"XPosF2 -> %.1f{XPosF2}"
+        System.Console.WriteLine $"YPosF2 -> %.1f{YPosF2}"
+        { model with XPosF1 = XPosF1; YPosF1 = YPosF1; XPosF2 = XPosF2; YPosF2 = YPosF2; Message = $"Move to %.1f{model.XPosF1},%.1f{model.YPosF1} and %.1f{model.XPosF2},%.1f{model.YPosF2}"}, Cmd.none
     | AddTodo ->
         let todo = Todo.create model.Input
 
@@ -272,7 +286,7 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
                                                                                 Fulma.Modifier.BackgroundColor Fulma.Color.IsGreyLighter
                                                                                 Fulma.Modifier.TextColor Fulma.Color.IsLink
                                                                                 Fulma.Modifier.TextWeight Fulma.TextWeight.Bold ] ]
-                    [ Bulma.label model.Message; Bulma.label $"Upper Angle Forecast = {model.AngleUpperOutputF}"; Bulma.label $"Lower Angle Forecast = {model.AngleLowerOutputF}"; Bulma.label $"Upper Angle = {model.AngleUpperOutput}"; Bulma.label $"Lower Angle = {model.AngleLowerOutput}";(* Bulma.label $"XPos1 = %.1f{model.XPos1}"; Bulma.label $"YPos1 = %.1f{model.YPos1}"; Bulma.label $"XPos2 = %.1f{model.XPos2}"; Bulma.label $"YPos2 = %.1f{model.YPos2}"*)]
+                    [ Bulma.label model.Message; Bulma.label $"Upper Angle Forecast = {model.AngleUpperOutputF}"; Bulma.label $"Lower Angle Forecast = {model.AngleLowerOutputF}"; Bulma.label $"Upper Angle = {model.AngleUpperOutput}"; Bulma.label $"Lower Angle = {model.AngleLowerOutput}";(* Bulma.label $"XPosF1 = %.1f{model.XPosF1}"; Bulma.label $"YPosF1 = %.1f{model.YPosF1}"; Bulma.label $"XPosF2 = %.1f{model.XPosF2}"; Bulma.label $"YPosF2 = %.1f{model.YPosF2}"*)]
             ]
         ]
         Bulma.field.div [
@@ -337,7 +351,7 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
                 Bulma.control.p [
                     Bulma.button.a [
                         color.isInfo
-                        prop.onClick (fun _ -> dispatch MoveRobot)
+                        prop.onClick (fun _ -> dispatch Tick)
                         prop.text "Move Line"
                     ]
                 ]
@@ -378,8 +392,8 @@ let drawingArea (model: Model) (dispatch: Msg -> unit) =
                     line [
                         X1 model.CenterY
                         Y1 model.CenterX
-                        X2 model.XPos1
-                        Y2 model.YPos1
+                        X2 model.XPosF1
+                        Y2 model.YPosF1
                         SVGAttr.StrokeWidth 4
                         SVGAttr.Stroke "lime"
                     ] []
@@ -392,10 +406,10 @@ let drawingArea (model: Model) (dispatch: Msg -> unit) =
                         SVGAttr.Stroke "blue"
                     ] []
                     line [
-                        X1 model.XPos1
-                        Y1 model.YPos1
-                        X2 model.XPos2
-                        Y2 model.YPos2
+                        X1 model.XPosF1
+                        Y1 model.YPosF1
+                        X2 model.XPosF2
+                        Y2 model.YPosF2
                         SVGAttr.StrokeWidth 4
                         SVGAttr.Stroke "lime"
                     ] []
