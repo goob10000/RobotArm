@@ -102,18 +102,115 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
     | MoveRobot -> //{ model with Message = $"Moved to %.1f{model.XPos1},%.1f{model.YPos1} and %.1f{model.XPos2},%.1f{model.YPos2}"; OldX1 = model.XPos1; OldY1 = model.YPos1; OldX2 = model.XPos2; OldY2 = model.YPos2}, Cmd.none
         model, Cmd.ofMsg Tick
     | Tick ->
-        if abs (model.AngleUpperOutputF - model.AngleUpperOutput) > 0.0 then
-            let xUpperAngleDif = min model.AngleChange (model.AngleUpperOutputF - model.OldX1)
-            let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
-            if abs xUpperAngleDif < 0.01 && abs yUpperAngleDif < 0.01 then
-                model,Cmd.none
+        if  abs (model.AngleLowerOutputF - model.AngleLowerOutput) < 0.01 && abs (model.AngleUpperOutputF - model.AngleUpperOutput) > 0.01 then
+            if (model.AngleUpperOutputF - model.AngleUpperOutput) > 0.0 then
+                let UpperAngleDif = min model.AngleChange (model.AngleUpperOutputF - model.AngleUpperOutput)
+                //let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+                if abs UpperAngleDif < 0.01 then
+                    model,Cmd.none
+                else
+                    let tick =
+                        async {
+                            do! Async.Sleep 50
+                            return Tick
+                        }
+                    {model with AngleUpperOutput = model.AngleUpperOutput + UpperAngleDif}, Cmd.OfAsync.result tick
+            else if (model.AngleUpperOutputF - model.AngleUpperOutput) < 0.0 then
+                let UpperAngleDif = min model.AngleChange ((model.AngleUpperOutputF - model.AngleUpperOutput) * -1.0)
+                //let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+                if abs UpperAngleDif < 0.01 then
+                    model,Cmd.none
+                else
+                    let tick =
+                        async {
+                            do! Async.Sleep 50
+                            return Tick
+                        }
+                    {model with AngleUpperOutput = model.AngleUpperOutput - UpperAngleDif}, Cmd.OfAsync.result tick
             else
-                let tick =
-                    async {
-                        do! Async.Sleep 50
-                        return Tick
-                    }
-                {model with AngleUpperOutput = model.AngleUpperOutput + xUpperAngleDif}, Cmd.OfAsync.result tick
+                model,Cmd.none
+        else if  abs (model.AngleUpperOutputF - model.AngleUpperOutput) < 0.01 && abs (model.AngleLowerOutputF - model.AngleLowerOutput) > 0.01 then
+            if (model.AngleLowerOutputF - model.AngleLowerOutput) > 0.0 then
+                let LowerAngleDif = min model.AngleChange (model.AngleLowerOutputF - model.AngleLowerOutput)
+                //let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+                if abs LowerAngleDif < 0.01 then
+                    model,Cmd.none
+                else
+                    let tick =
+                        async {
+                            do! Async.Sleep 50
+                            return Tick
+                        }
+                    {model with AngleLowerOutput = model.AngleLowerOutput + LowerAngleDif}, Cmd.OfAsync.result tick
+            else if (model.AngleLowerOutputF - model.AngleLowerOutput) < 0.0 then
+                let LowerAngleDif = min model.AngleChange ((model.AngleLowerOutputF - model.AngleLowerOutput) * -1.0)
+                //let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+                if abs LowerAngleDif < 0.01 then
+                    model,Cmd.none
+                else
+                    let tick =
+                        async {
+                            do! Async.Sleep 50
+                            return Tick
+                        }
+                    {model with AngleLowerOutput = model.AngleLowerOutput - LowerAngleDif}, Cmd.OfAsync.result tick
+            else
+                model,Cmd.none
+        else if  abs (model.AngleUpperOutputF - model.AngleUpperOutput) > 0.01 && abs (model.AngleLowerOutputF - model.AngleLowerOutput) > 0.01 then
+            if (model.AngleLowerOutputF - model.AngleLowerOutput) > 0.0 && (model.AngleUpperOutputF - model.AngleUpperOutput) > 0.0 then
+                let LowerAngleDif = min model.AngleChange (model.AngleLowerOutputF - model.AngleLowerOutput)
+                let UpperAngleDif = min model.AngleChange (model.AngleUpperOutputF - model.AngleUpperOutput)
+                //let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+                if abs (LowerAngleDif) < 0.01 && abs (UpperAngleDif) < 0.01 then
+                    model,Cmd.none
+                else
+                    let tick =
+                        async {
+                            do! Async.Sleep 50
+                            return Tick
+                        }
+                    {model with AngleLowerOutput = model.AngleLowerOutput + LowerAngleDif; AngleUpperOutput = model.AngleUpperOutput + UpperAngleDif}, Cmd.OfAsync.result tick
+            else if (model.AngleLowerOutputF - model.AngleLowerOutput) < 0.0 && (model.AngleUpperOutputF - model.AngleUpperOutput) > 0.0 then
+                let LowerAngleDif = min model.AngleChange ((model.AngleLowerOutputF - model.AngleLowerOutput) * -1.0)
+                let UpperAngleDif = min model.AngleChange (model.AngleUpperOutputF - model.AngleUpperOutput)
+                //let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+                if abs (LowerAngleDif) < 0.01 && abs (UpperAngleDif) < 0.01 then
+                    model,Cmd.none
+                else
+                    let tick =
+                        async {
+                            do! Async.Sleep 50
+                            return Tick
+                        }
+                    {model with AngleLowerOutput = model.AngleLowerOutput - LowerAngleDif; AngleUpperOutput = model.AngleUpperOutput + UpperAngleDif}, Cmd.OfAsync.result tick
+            else if (model.AngleLowerOutputF - model.AngleLowerOutput) > 0.0 && (model.AngleUpperOutputF - model.AngleUpperOutput) < 0.0 then
+                let LowerAngleDif = min model.AngleChange (model.AngleLowerOutputF - model.AngleLowerOutput)
+                let UpperAngleDif = min model.AngleChange ((model.AngleUpperOutputF - model.AngleUpperOutput) * -1.0)
+                //let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+                if abs (LowerAngleDif) < 0.01 && abs (UpperAngleDif) < 0.01 then
+                    model,Cmd.none
+                else
+                    let tick =
+                        async {
+                            do! Async.Sleep 50
+                            return Tick
+                        }
+                    {model with AngleLowerOutput = model.AngleLowerOutput + LowerAngleDif; AngleUpperOutput = model.AngleUpperOutput - UpperAngleDif}, Cmd.OfAsync.result tick
+            else if (model.AngleLowerOutputF - model.AngleLowerOutput) < 0.0 && (model.AngleUpperOutputF - model.AngleUpperOutput) < 0.0 then
+                let LowerAngleDif = min model.AngleChange ((model.AngleLowerOutputF - model.AngleLowerOutput) * -1.0)
+                let UpperAngleDif = min model.AngleChange ((model.AngleUpperOutputF - model.AngleUpperOutput) * -1.0)
+                //let yUpperAngleDif = min model.AngleChange (model.YPos1 - model.OldY1)
+                if abs (LowerAngleDif) < 0.01 && abs (UpperAngleDif) < 0.01 then
+                    model,Cmd.none
+                else
+                    let tick =
+                        async {
+                            do! Async.Sleep 50
+                            return Tick
+                        }
+                    {model with AngleLowerOutput = model.AngleLowerOutput - LowerAngleDif; AngleUpperOutput = model.AngleUpperOutput - UpperAngleDif}, Cmd.OfAsync.result tick
+            else
+                model,Cmd.none
         else
             model,Cmd.none
 
@@ -175,7 +272,7 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
                                                                                 Fulma.Modifier.BackgroundColor Fulma.Color.IsGreyLighter
                                                                                 Fulma.Modifier.TextColor Fulma.Color.IsLink
                                                                                 Fulma.Modifier.TextWeight Fulma.TextWeight.Bold ] ]
-                    [ Bulma.label model.Message; Bulma.label $"Upper Angle = {model.AngleUpperOutputF}"; Bulma.label $"Lower Angle = {model.AngleLowerOutputF}"; Bulma.label $"XPos1 = %.1f{model.XPos1}"; Bulma.label $"YPos1 = %.1f{model.YPos1}"; Bulma.label $"XPos2 = %.1f{model.XPos2}"; Bulma.label $"YPos2 = %.1f{model.YPos2}"]
+                    [ Bulma.label model.Message; Bulma.label $"Upper Angle Forecast = {model.AngleUpperOutputF}"; Bulma.label $"Lower Angle Forecast = {model.AngleLowerOutputF}"; Bulma.label $"Upper Angle = {model.AngleUpperOutput}"; Bulma.label $"Lower Angle = {model.AngleLowerOutput}";(* Bulma.label $"XPos1 = %.1f{model.XPos1}"; Bulma.label $"YPos1 = %.1f{model.YPos1}"; Bulma.label $"XPos2 = %.1f{model.XPos2}"; Bulma.label $"YPos2 = %.1f{model.YPos2}"*)]
             ]
         ]
         Bulma.field.div [
