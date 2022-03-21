@@ -88,6 +88,22 @@ let init () : Model * Cmd<Msg> =
 
     model, cmd
 
+let angleTruncation (v: float) =
+    if v > 180.0 then
+        System.Console.WriteLine $"v = {v}"
+        System.Console.WriteLine $"{floor(v/360.0)}"
+        let upAngPreUp = (((v + 180.0) / 360.0) - floor((v+180.0)/360.0))*360.0 - 180.0
+        let upAngPre = Math.PI*upAngPreUp/180.0
+        System.Console.WriteLine $"UAP = {upAngPreUp}"
+        upAngPre
+    else if v < -180.0 then
+        let upAngPreDown = (((((v* -1.0)+180.0)/360.0) - floor(((v * -1.0)+180.0)/360.0))*360.0 - 180.0)* -1.0
+        let upAngPre = Math.PI*upAngPreDown/180.0
+        upAngPre
+    else
+        let upAngPre = Math.PI*v/180.0
+        upAngPre
+
 let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
     match msg with
     | GotTodos todos -> { model with Todos = todos }, Cmd.none
@@ -98,13 +114,15 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
     | SetAngleUpper ->
         match System.Double.TryParse model.AngleUpperInput with
         | true, v ->
-            { model with AngleUpperOutputF = Math.PI*v/180.0; Message = ""}, Cmd.ofMsg CalcMovement
+            let upAngPre = angleTruncation v
+            { model with AngleUpperOutputF = upAngPre; Message = ""}, Cmd.ofMsg CalcMovement
         | false, _ ->
             { model with Message = "Upper Angle Not a Number"}, Cmd.none
     | SetAngleLower ->
         match System.Double.TryParse model.AngleLowerInput with
         | true, v ->
-            { model with AngleLowerOutputF = Math.PI*v/180.0; Message = ""}, Cmd.ofMsg CalcMovement
+            let lowAngPre = angleTruncation v
+            { model with AngleUpperOutputF = lowAngPre; Message = ""}, Cmd.ofMsg CalcMovement
         | false, _ ->
             { model with Message = "Lower Angle Not a Number"}, Cmd.none
     | MoveRobot ->
