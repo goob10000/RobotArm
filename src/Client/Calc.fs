@@ -79,9 +79,9 @@ let calcDelta (x:float) (y:float) (q:Quadrant) =
 
 let calcUpperAngle (metrics:RobotMetrics) (x:float) (y:float) (q:Quadrant) =
     let radius = diffSq x y  // All of this function converts the X Y and Arm lengths into the proper angles to reach the desired coordinates for the upper arm
+    let uAlpha = oppAngle metrics.LengthLowerArm metrics.LengthUpperArm radius
     match q with
         | Q1 ->
-            let uAlpha = oppAngle metrics.LengthLowerArm metrics.LengthUpperArm radius
             let uGamma = calcGamma x y Q1
             let uTheta = uAlpha + uGamma
             let uAngle = angleTruncationRadRad uTheta
@@ -93,7 +93,6 @@ let calcUpperAngle (metrics:RobotMetrics) (x:float) (y:float) (q:Quadrant) =
             uAngle
 
         | Q2 ->
-            let uAlpha = oppAngle metrics.LengthLowerArm metrics.LengthUpperArm radius
             let uGamma = calcGamma x y Q2
             let uTheta = uAlpha + uGamma
             let uAngle = angleTruncationRadRad (uTheta + (Math.PI/2.0))
@@ -105,7 +104,6 @@ let calcUpperAngle (metrics:RobotMetrics) (x:float) (y:float) (q:Quadrant) =
             uAngle
 
         | Q3 ->
-            let uAlpha = oppAngle metrics.LengthLowerArm metrics.LengthUpperArm radius
             let uGamma = calcGamma x y Q3
             let uTheta = uAlpha + uGamma
             let uAngle = angleTruncationRadRad (-Math.PI + uTheta)
@@ -116,7 +114,6 @@ let calcUpperAngle (metrics:RobotMetrics) (x:float) (y:float) (q:Quadrant) =
 
             uAngle
         | Q4 ->
-            let uAlpha = oppAngle metrics.LengthLowerArm metrics.LengthUpperArm radius
             let uGamma = calcGamma x y Q4
             let uTheta = uAlpha + uGamma
             let uAngle = angleTruncationRadRad (-Math.PI/2.0 + uTheta)
@@ -128,10 +125,9 @@ let calcUpperAngle (metrics:RobotMetrics) (x:float) (y:float) (q:Quadrant) =
             uAngle
         | Axis ->
             if x > 0.0 then
-                let uAlpha = oppAngle metrics.LengthLowerArm metrics.LengthUpperArm radius
                 let uGamma = calcGamma x y Axis
                 let uTheta = uAlpha + uGamma
-                let uAngle = angleTruncationRadRad (uTheta + (Math.PI/2.0))
+                let uAngle = angleTruncationRadRad (uTheta - Math.PI/2.0)
                 System.Console.WriteLine $"uAlpha -> {uAlpha}"
                 System.Console.WriteLine $"uGamma -> {uGamma}"
                 System.Console.WriteLine $"uTheta -> {uTheta}"
@@ -140,10 +136,9 @@ let calcUpperAngle (metrics:RobotMetrics) (x:float) (y:float) (q:Quadrant) =
                 uAngle
 
             else if x < 0.0 then
-                let uAlpha = oppAngle metrics.LengthLowerArm metrics.LengthUpperArm radius
                 let uGamma = calcGamma x y Axis
                 let uTheta = uAlpha + uGamma
-                let uAngle = angleTruncationRadRad (-Math.PI/2.0 + uTheta)
+                let uAngle = angleTruncationRadRad (-Math.PI*3.0/2.0 + uTheta)
                 System.Console.WriteLine $"uAlpha -> {uAlpha}"
                 System.Console.WriteLine $"uGamma -> {uGamma}"
                 System.Console.WriteLine $"uTheta -> {uTheta}"
@@ -152,10 +147,9 @@ let calcUpperAngle (metrics:RobotMetrics) (x:float) (y:float) (q:Quadrant) =
                 uAngle
 
             else if y > 0.0 then
-                let uAlpha = oppAngle metrics.LengthLowerArm metrics.LengthUpperArm radius
                 let uGamma = calcGamma x y Axis
                 let uTheta = uAlpha + uGamma
-                let uAngle = angleTruncationRadRad uTheta
+                let uAngle = angleTruncationRadRad (uTheta + Math.PI/2.0)
                 System.Console.WriteLine $"uAlpha -> {uAlpha}"
                 System.Console.WriteLine $"uGamma -> {uGamma}"
                 System.Console.WriteLine $"uTheta -> {uTheta}"
@@ -164,10 +158,9 @@ let calcUpperAngle (metrics:RobotMetrics) (x:float) (y:float) (q:Quadrant) =
                 uAngle
 
             else if y < 0.0 then
-                let uAlpha = oppAngle metrics.LengthLowerArm metrics.LengthUpperArm radius
                 let uGamma = calcGamma x y Axis
                 let uTheta = uAlpha + uGamma
-                let uAngle = angleTruncationRadRad (-Math.PI + uTheta)
+                let uAngle = angleTruncationRadRad (-Math.PI/2.0 + uTheta)
                 System.Console.WriteLine $"uAlpha -> {uAlpha}"
                 System.Console.WriteLine $"uGamma -> {uGamma}"
                 System.Console.WriteLine $"uTheta -> {uTheta}"
@@ -185,12 +178,12 @@ let calcUpperAngle (metrics:RobotMetrics) (x:float) (y:float) (q:Quadrant) =
 
 let calcLowerAngle (metrics:RobotMetrics) (x:float) (y:float) (q:Quadrant) =
     let radius = diffSq x y // All of this function converts the X Y and Arm lengths into the proper angles to reach the desired coordinates for the upper arm
+    let uBeta = oppAngle metrics.LengthUpperArm metrics.LengthLowerArm radius
+    let uAlpha = oppAngle metrics.LengthLowerArm metrics.LengthUpperArm radius
     match q with
         | Q1 ->
-            let uAlpha = oppAngle metrics.LengthLowerArm metrics.LengthUpperArm radius
             let uGamma = calcGamma x y Q1
             let uTheta = uAlpha + uGamma
-            let uBeta = oppAngle metrics.LengthUpperArm metrics.LengthLowerArm radius
             let uDelta = calcDelta x y Q1
             let uPhi = uBeta + uDelta - Math.PI/2.0
             let lAngle = -uTheta - uPhi
@@ -206,10 +199,8 @@ let calcLowerAngle (metrics:RobotMetrics) (x:float) (y:float) (q:Quadrant) =
             lAngle
 
         | Q2 ->
-            let uAlpha = oppAngle metrics.LengthLowerArm metrics.LengthUpperArm radius
             let uGamma = calcGamma x y Q2
             let uTheta = uAlpha + uGamma
-            let uBeta = oppAngle metrics.LengthUpperArm metrics.LengthLowerArm radius
             let uDelta = calcDelta x y Q2
             let uPhi = uBeta + uDelta - Math.PI/2.0
             let lAngle = -uTheta - uPhi
@@ -225,10 +216,8 @@ let calcLowerAngle (metrics:RobotMetrics) (x:float) (y:float) (q:Quadrant) =
             lAngle
 
         | Q3 ->
-            let uAlpha = oppAngle metrics.LengthLowerArm metrics.LengthUpperArm radius
             let uGamma = calcGamma x y Q3
             let uTheta = uAlpha + uGamma
-            let uBeta = oppAngle metrics.LengthUpperArm metrics.LengthLowerArm radius
             let uDelta = calcDelta x y Q3
             let uPhi = uBeta + uDelta - Math.PI/2.0
             let lAngle = -uTheta - uPhi
@@ -244,10 +233,8 @@ let calcLowerAngle (metrics:RobotMetrics) (x:float) (y:float) (q:Quadrant) =
             lAngle
 
         | Q4 ->
-            let uAlpha = oppAngle metrics.LengthLowerArm metrics.LengthUpperArm radius
             let uGamma = calcGamma x y Q4
             let uTheta = uAlpha + uGamma
-            let uBeta = oppAngle metrics.LengthUpperArm metrics.LengthLowerArm radius
             let uDelta = calcDelta x y Q4
             let uPhi = uBeta + uDelta - Math.PI/2.0
             let lAngle = -uTheta - uPhi
@@ -263,26 +250,72 @@ let calcLowerAngle (metrics:RobotMetrics) (x:float) (y:float) (q:Quadrant) =
             lAngle
 
         | Axis ->
-            let uAlpha = oppAngle metrics.LengthLowerArm metrics.LengthUpperArm radius
-            let uGamma = calcGamma x y Axis
-            let uTheta = uAlpha + uGamma
-            let uBeta = oppAngle metrics.LengthUpperArm metrics.LengthLowerArm radius
-            let uDelta = calcDelta x y Axis
-            let uPhi = uBeta + uDelta - Math.PI/2.0
-            let lAngle = -uTheta - uPhi
+            if x > 0.0 then
+                let uGamma = calcGamma x y Q1
+                let uTheta = uAlpha + uGamma
+                let uDelta = calcDelta x y Q1
+                let uPhi = uBeta + uDelta - Math.PI/2.0
+                let lAngle = -uTheta - uPhi
+                System.Console.WriteLine $"uAlpha -> {uAlpha}"
+                System.Console.WriteLine $"uGamma -> {uGamma}"
+                System.Console.WriteLine $"uTheta -> {uTheta}"
+                System.Console.WriteLine $"uBeta -> {uBeta}"
+                System.Console.WriteLine $"uDelta -> {uDelta}"
+                System.Console.WriteLine $"uPhi -> {uPhi}"
+                System.Console.WriteLine $"lAngle -> {lAngle}"
+                lAngle
 
-            System.Console.WriteLine $"uAlpha -> {uAlpha}"
-            System.Console.WriteLine $"uGamma -> {uGamma}"
-            System.Console.WriteLine $"uTheta -> {uTheta}"
-            System.Console.WriteLine $"uBeta -> {uBeta}"
-            System.Console.WriteLine $"uDelta -> {uDelta}"
-            System.Console.WriteLine $"uPhi -> {uPhi}"
-            System.Console.WriteLine $"lAngle -> {lAngle}"
+            else if y > 0.0 then
+                let uGamma = calcGamma x y Q2
+                let uTheta = uAlpha + uGamma
+                let uDelta = calcDelta x y Q2
+                let uPhi = uBeta + uDelta - Math.PI/2.0
+                let lAngle = -uTheta - uPhi
+                System.Console.WriteLine $"uAlpha -> {uAlpha}"
+                System.Console.WriteLine $"uGamma -> {uGamma}"
+                System.Console.WriteLine $"uTheta -> {uTheta}"
+                System.Console.WriteLine $"uBeta -> {uBeta}"
+                System.Console.WriteLine $"uDelta -> {uDelta}"
+                System.Console.WriteLine $"uPhi -> {uPhi}"
+                System.Console.WriteLine $"lAngle -> {lAngle}"
+                lAngle
 
-            lAngle
+            else if x < 0.0 then
+                let uGamma = calcGamma x y Q3
+                let uTheta = uAlpha + uGamma
+                let uDelta = calcDelta x y Q3
+                let uPhi = uBeta + uDelta - Math.PI/2.0
+                let lAngle = -uTheta - uPhi
+                System.Console.WriteLine $"uAlpha -> {uAlpha}"
+                System.Console.WriteLine $"uGamma -> {uGamma}"
+                System.Console.WriteLine $"uTheta -> {uTheta}"
+                System.Console.WriteLine $"uBeta -> {uBeta}"
+                System.Console.WriteLine $"uDelta -> {uDelta}"
+                System.Console.WriteLine $"uPhi -> {uPhi}"
+                System.Console.WriteLine $"lAngle -> {lAngle}"
+                lAngle
+
+            else if y < 0.0 then
+                let uGamma = calcGamma x y Q4
+                let uTheta = uAlpha + uGamma
+                let uDelta = calcDelta x y Q4
+                let uPhi = uBeta + uDelta - Math.PI/2.0
+                let lAngle = -uTheta - uPhi
+                System.Console.WriteLine $"uAlpha -> {uAlpha}"
+                System.Console.WriteLine $"uGamma -> {uGamma}"
+                System.Console.WriteLine $"uTheta -> {uTheta}"
+                System.Console.WriteLine $"uBeta -> {uBeta}"
+                System.Console.WriteLine $"uDelta -> {uDelta}"
+                System.Console.WriteLine $"uPhi -> {uPhi}"
+                System.Console.WriteLine $"lAngle -> {lAngle}"
+                lAngle
+
+            else
+                0.0
+
 
         | Center ->
-            let uTheta0 = Math.PI
+            let uTheta0 = -Math.PI
 
             uTheta0
 
