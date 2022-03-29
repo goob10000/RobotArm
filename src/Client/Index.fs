@@ -51,13 +51,13 @@ let init () : Model * Cmd<Msg> =
                     AngleLowerOutput = 0.0
                     AngleUpperOutput = 0.0
                     Message = "Welcome"
-                    Length = 100.0
                     Metrics = {
                         CenterX = 150.0
                         CenterY = 150.0
                         Radius = lengthLowerArm + lengthUpperArm
                         LengthLowerArm = lengthLowerArm
                         LengthUpperArm = lengthUpperArm
+                        Length = 100.0
                     }
                     XPosF1 = centerX + 100.0
                     YPosF1 = centerY
@@ -180,19 +180,12 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
             match System.Double.TryParse model.PositionYInput with
             | true, y ->
             if model.Metrics.Radius >= diffSq x y then //Check to make sure not out of range of robot arm
-                let uTheta = calcTheta model.Metrics x y
-                let uPhi = calcPhi model.Metrics x y
-                let quad = quad x y
-                System.Console.WriteLine $"uTheta -> {uTheta}"
-                System.Console.WriteLine $"uPhi -> {uPhi}"
-                let iTheta , iPhi = quadCalc quad uTheta uPhi
-                let fTheta = angleTruncationRadRad iTheta
-                let fPhi = angleTruncationRadRad iPhi
-                let upperAngle = fTheta
-                System.Console.WriteLine "SetAngleUpperP"
-                System.Console.WriteLine $"upperAngle -> {upperAngle}"
-                System.Console.WriteLine $"quad -> {quad}"
-                System.Console.WriteLine $"iTheta,iPhi -> {iTheta},{iPhi}"
+                let quadNow = quad x y
+                let upperAngle = calcUpperAngle model.Metrics x y quadNow
+                //System.Console.WriteLine "SetAngleUpperP"
+                //System.Console.WriteLine $"upperAngle -> {upperAngle}"
+                //System.Console.WriteLine $"quad -> {quad}"
+                //System.Console.WriteLine $"iTheta,iPhi -> {iTheta},{iPhi}"
 
                 { model with AngleUpperOutputF = upperAngle; Message = ""}, Cmd.ofMsg CalcMovementAngle
             else
@@ -209,13 +202,15 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
             match System.Double.TryParse model.PositionYInput with
             | true, y ->
             if model.Metrics.Radius >= diffSq x y then
-                let uTheta = calcTheta model.Metrics x y
-                let uPhi = calcPhi model.Metrics x y
+                let quadNow = quad x y
+                let lowerAngle = calcLowerAngle model.Metrics x y quadNow
+                (*let uTheta = calcUpperAngle model.Metrics x y quadNow
+                let uPhi = calcLowerAngle model.Metrics x y quadNow
                 let quad = quad x y
                 let iTheta , iPhi = quadCalc quad uTheta uPhi
                 let fTheta = angleTruncationRadRad iTheta
                 let fPhi = angleTruncationRadRad iPhi
-                let lowerAngle = fTheta - fPhi
+                let lowerAngle = fTheta - fPhi*)
                 { model with AngleLowerOutputF = lowerAngle; Message = ""}, Cmd.ofMsg CalcMovementAngle
             else
                 {model with Message = "Too Far"}, Cmd.none
@@ -225,10 +220,10 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
             {model with Message = "Not A Possible X Position"}, Cmd.none
 
     | CalcMovementAngle ->
-        let XPosF1 = (cos(model.AngleUpperOutputF) * model.Length) + model.Metrics.CenterX
-        let YPosF1 = (sin(model.AngleUpperOutputF) * model.Length * -1.0) + model.Metrics.CenterY
-        let XPosF2 = (cos(model.AngleUpperOutputF + model.AngleLowerOutputF) * model.Length) + XPosF1
-        let YPosF2 = (sin(model.AngleUpperOutputF + model.AngleLowerOutputF) * model.Length * -1.0) + YPosF1
+        let XPosF1 = (cos(model.AngleUpperOutputF) * model.Metrics.Length) + model.Metrics.CenterX
+        let YPosF1 = (sin(model.AngleUpperOutputF) * model.Metrics.Length * -1.0) + model.Metrics.CenterY
+        let XPosF2 = (cos(model.AngleUpperOutputF + model.AngleLowerOutputF) * model.Metrics.Length) + XPosF1
+        let YPosF2 = (sin(model.AngleUpperOutputF + model.AngleLowerOutputF) * model.Metrics.Length * -1.0) + YPosF1
         // System.Console.WriteLine $"UpperOut -> {model.AngleUpperOutputF}"
         // System.Console.WriteLine $"Model Length -> {model.Length}"
         // System.Console.WriteLine $"LowerOut -> {model.AngleLowerOutputF}"
@@ -253,10 +248,10 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
         | false, _ ->
             { model with Message = "Lower Angle Not a Number"}, Cmd.none
     | MoveRobot ->
-        let sXPosI1 = (cos(model.AngleUpperOutput) * model.Length) + model.Metrics.CenterX
-        let sYPosI1 = (sin(model.AngleUpperOutput) * model.Length * -1.0) + model.Metrics.CenterY
-        let sXPosI2 = (cos(model.AngleUpperOutput + model.AngleLowerOutput) * model.Length) + sXPosI1
-        let sYPosI2 = (sin(model.AngleUpperOutput + model.AngleLowerOutput) * model.Length * -1.0) + sYPosI1
+        let sXPosI1 = (cos(model.AngleUpperOutput) * model.Metrics.Length) + model.Metrics.CenterX
+        let sYPosI1 = (sin(model.AngleUpperOutput) * model.Metrics.Length * -1.0) + model.Metrics.CenterY
+        let sXPosI2 = (cos(model.AngleUpperOutput + model.AngleLowerOutput) * model.Metrics.Length) + sXPosI1
+        let sYPosI2 = (sin(model.AngleUpperOutput + model.AngleLowerOutput) * model.Metrics.Length * -1.0) + sYPosI1
 
         { model with Message = $"Moved to %.1f{sXPosI1},%.1f{sYPosI1} and %.1f{sXPosI2},%.1f{sYPosI2}"; OldX1 = sXPosI1; OldY1 = sYPosI1; OldX2 = sXPosI2; OldY2 = sYPosI2}, Cmd.ofMsg Tick
         //model, Cmd.ofMsg Tick

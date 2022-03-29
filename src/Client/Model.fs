@@ -6,6 +6,7 @@ type RobotMetrics = {
                 Radius: double
                 CenterX: double
                 CenterY: double
+                Length: double
                 }
 
 
@@ -20,7 +21,6 @@ type Model = {  Message: string
                 AngleLowerOutputF: double
                 AngleUpperOutput: double
                 AngleLowerOutput: double
-                Length: double
                 XPosF1: double
                 YPosF1: double
                 XPosI1: double
@@ -43,6 +43,7 @@ type Quadrant =
     | Q3
     | Q4
     | Center
-    | AxisOrUnknown
+    | Axis
+    | Unknown
 
 

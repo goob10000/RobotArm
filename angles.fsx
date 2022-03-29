@@ -12,6 +12,11 @@ type Quadrant =
 | Unknown
 
 
+let sq x = x*x
+
+let oppAngle (sL1:float) (sL2:float) (sL3:float) =
+    let output = Math.Acos((sq(sL2) + sq(sL3) - sq(sL1))/(2.0*sL2*sL3))
+    output
 
 let x = 80.0
 let y = 120.0
@@ -38,5 +43,5 @@ let b = Math.Acos -0.0
 let c = Math.Acos
 let d = Math.Acos
 
-
+let e = oppAngle 23.0 17.5 16.2
 
